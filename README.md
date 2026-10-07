@@ -378,3 +378,9 @@ Full methods, API reference, and changelog: **https://genomewalker.github.io/lib
 - [Methods](https://genomewalker.github.io/libtaph/methods/): damage model equations, BIC classifier design, rescue rules
 - [API Reference](https://genomewalker.github.io/libtaph/api/): FrameSelector methods, SampleDamageProfile fields
 - [Changelog](https://genomewalker.github.io/libtaph/changelog/): recent changes and milestones
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

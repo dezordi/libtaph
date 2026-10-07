@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
-project(libtaph VERSION 1.0.0 LANGUAGES CXX)
+project(libtaph VERSION 1.3.0 LANGUAGES CXX)
+
+# Visible to parent projects that pull libtaph in via FetchContent/add_subdirectory
+set(TAPH_VERSION "${PROJECT_VERSION}" CACHE INTERNAL "libtaph version")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,6 +54,21 @@ add_library(taph
 )
 
 add_library(taph::taph ALIAS taph)
+
+find_package(Threads REQUIRED)
+target_link_libraries(taph PUBLIC Threads::Threads)
+
+set_target_properties(taph PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    VERSION   ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+
+# Workaround: GCC 13/14 SSE vectorizer emits movdqa on 8-mod-16 addresses in
+# merge_sample_profiles (segfault on baseline x86-64 builds, e.g. conda).
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set_source_files_properties(src/damage_estimation_update.cpp
+        PROPERTIES COMPILE_OPTIONS "-fno-tree-vectorize")
+endif()
 
 target_include_directories(taph PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -112,7 +130,7 @@ configure_package_config_file(
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/taph-config-version.cmake"
     VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
+    COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
@@ -145,6 +163,11 @@ if(TAPH_BUILD_TESTS)
     target_link_libraries(test_pi_shape_kinvariance PRIVATE taph)
     target_compile_options(test_pi_shape_kinvariance PRIVATE -O2 -Wall -Wextra)
     add_test(NAME pi_shape_kinvariance COMMAND test_pi_shape_kinvariance)
+
+    add_executable(test_merge_profiles tests/test_merge_profiles.cpp)
+    target_link_libraries(test_merge_profiles PRIVATE taph)
+    target_compile_options(test_merge_profiles PRIVATE -O2 -Wall -Wextra)
+    add_test(NAME merge_profiles COMMAND test_merge_profiles)
 
     # Layer-0 count-table golden gate: re-profiles fixtured samples and diffs the pre-clamp count
     # tables (catches cap-masked z regressions the emitted-JSON gate cannot see). Self-skips when the
